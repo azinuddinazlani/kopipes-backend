@@ -1,0 +1,26 @@
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Table
+from sqlalchemy.orm import relationship
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from db.db_connection import Base
+
+class EmployerSchema(BaseModel):
+    name: Optional[int] = str
+
+class Employer(Base):
+    __tablename__ = "employers"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+
+    jobs = relationship('EmployerJobs', back_populates='employer', lazy="joined")
+
+
+class EmployerJobs(Base):
+    __tablename__ = "employer_jobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    employer_id = Column(Integer, ForeignKey('employers.id'), nullable=False)
+    name = Column(String, nullable=False)
+
+    employer = relationship('Employer', back_populates='jobs')
