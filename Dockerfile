@@ -9,6 +9,6 @@ ENV APP_HOME /root
 WORKDIR $APP_HOME
 COPY . $APP_HOME
 
-EXPOSE 8080
+EXPOSE 8000
 WORKDIR $APP_HOME
-CMD ["uvicorn", "main:app", "--reload"]
+CMD ["uvicorn", "main:app", "--reload", "--port", "8000"]
