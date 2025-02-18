@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
@@ -17,7 +17,7 @@ create_engine(
         #                         ?unix_sock=<INSTANCE_UNIX_SOCKET>/.s.PGSQL.5432
         # Note: Some drivers require the `unix_sock` query parameter to use a different key.
         # For example, 'psycopg2' uses the path set to `host` in order to connect successfully.
-        sqlalchemy.engine.url.URL.create(
+        engine.url.URL.create(
             drivername="postgresql+pg8000",
             username=db_user,
             password=db_pass,
