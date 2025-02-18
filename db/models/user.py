@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from db.db_connection import Base
+from db.models.employer import EmployerJobs
 
 class UserRegister(BaseModel):
     email: EmailStr
@@ -29,6 +30,7 @@ class User(Base):
 
     skills = relationship('UserSkills', back_populates='user', lazy="joined")
     skill_assess = relationship('UserSkillAssess', back_populates='user', lazy="joined")
+    employer_jobs = relationship('UserEmployerJobs', back_populates='user', lazy='joined')
 
 
 class UserSkills(Base):
@@ -67,3 +69,13 @@ class UserSkillAssess(Base):
     user_level = Column(String, default="0")
 
     user = relationship('User', back_populates='skill_assess')
+
+class UserEmployerJobs(Base):
+    __tablename__ = "user_employer_jobs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    employer_jobs_id = Column(Integer, ForeignKey('employer_jobs.id'), nullable=False)
+
+    user = relationship('User', back_populates="employer_jobs")
+    jobs = relationship('EmployerJobs', back_populates='user_employer_jobs')

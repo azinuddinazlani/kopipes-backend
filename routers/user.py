@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from sqlalchemy.orm import Session
 from db.db_connection import get_db
 from db.crud import *
-from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkillAssess, UserSkillAssessSchema
+from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs
 from typing import List
 import shutil, os, base64
 
@@ -124,3 +124,15 @@ def user_skill_assess_set(skills: List[UserSkillAssessSchema], email: str, versi
             # print(f"User with email {email} not found.")
             raise HTTPException(status_code=400, detail={result["error"]})
     return True
+
+@router.post("/{email}/apply/{job}")
+def user_apply_job(email: str, job: str, db: Session = Depends(get_db)):
+    user_id = get_data(db, User, {"email": email})[0].id
+
+    result = insert_data(db, UserEmployerJobs, {
+        "user_id": user_id,
+        "employer_jobs_id": job
+    })
+    if not result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
