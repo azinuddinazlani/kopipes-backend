@@ -6,3 +6,4 @@ pydantic
 email_validator
 asyncpg
 python-multipart
+pg8000
