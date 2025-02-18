@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from db.db_connection import Base
+# from db.models.user import UserEmployerJobs
 
 class EmployerSchema(BaseModel):
     name: Optional[int] = str
@@ -24,3 +25,4 @@ class EmployerJobs(Base):
     name = Column(String, nullable=False)
 
     employer = relationship('Employer', back_populates='jobs')
+    user_employer_jobs = relationship('UserEmployerJobs', back_populates='jobs', lazy="joined")
