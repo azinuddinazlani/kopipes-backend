@@ -50,3 +50,7 @@ jobs:
           region: ${{ env.REGION }}
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
           flags: "--allow-unauthenticated"
+          env_vars: |
+            DB_USER=${{ vars.DB_USER }}
+            DB_PASS=${{ secrets.DB_PASS }}
+            DB_DATABASE=${{ vars.DB_NAME }}
