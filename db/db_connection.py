@@ -7,10 +7,10 @@ DATABASE_URL = "postgresql://postgres:password@localhost:5432/dbname"
 
 # Set up SQLAlchemy Engine and Base
 # engine = create_engine(DATABASE_URL)
-db_user = os.environ.get["DB_USER"]
-db_pass = os.environ.get["DB_PASS"]
-db_name = os.environ.get["DB_NAME"]
-unix_socket_path = os.environ.get["INSTANCE_UNIX_SOCKET"]
+db_user = os.environ.get("DB_USER")
+db_pass = os.environ.get("DB_PASS")
+db_name = os.environ.get("DB_NAME")
+unix_socket_path = os.environ.get("INSTANCE_UNIX_SOCKET")
 create_engine(
         # Equivalent URL:
         # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
