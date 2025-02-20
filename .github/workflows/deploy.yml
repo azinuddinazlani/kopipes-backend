@@ -54,3 +54,4 @@ jobs:
             DB_USER=${{ vars.DB_USER }}
             DB_PASS=${{ secrets.DB_PASS }}
             DB_NAME=${{ vars.DB_NAME }}
+            CLOUD_SQL_CONNECTION_NAME=${{ vars.CLOUD_SQL_INSTANCE }}

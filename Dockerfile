@@ -9,6 +9,10 @@ ENV APP_HOME /root
 WORKDIR $APP_HOME
 COPY . $APP_HOME
 
+RUN apt install wget
+RUN wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+RUN chmod +x cloud_sql_proxy
+
 EXPOSE 8000
 WORKDIR $APP_HOME
-CMD ["uvicorn", "main:app", "--reload", "--port", "8000"]
+CMD ["sh -c ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:0.0.0.0:5432 & ; uvicorn main:app --reload --port 8000"]

@@ -4,7 +4,7 @@ from routers.user import router as user_router
 from routers.skill_assess import router as skill_assess_router
 from routers.employer import router as employer_router
 
-# init_table()
+init_table()
 
 app = FastAPI()
 
