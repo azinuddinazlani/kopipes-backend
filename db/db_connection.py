@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
+import os, sys
 
 # Database URL (Update as needed)
 DATABASE_URL = "postgresql://postgres:password@localhost:5432/dbname"
@@ -11,7 +11,8 @@ db_user = os.environ.get("DB_USER")
 db_pass = os.environ.get("DB_PASS")
 db_name = os.environ.get("DB_NAME")
 unix_socket_path = os.environ.get("INSTANCE_UNIX_SOCKET")
-create_engine(
+engine = create_engine(
+        # DATABASE_URL
         # Equivalent URL:
         # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
         #                         ?unix_sock=<INSTANCE_UNIX_SOCKET>/.s.PGSQL.5432
@@ -45,3 +46,8 @@ def get_db():
         yield db
     finally:
         db.close()
+        
+        
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        globals()[sys.argv[1]]()
