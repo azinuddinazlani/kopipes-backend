@@ -25,6 +25,13 @@ engine = create_engine(
             database=db_name,
             query={"unix_sock": f"{unix_socket_path}/.s.PGSQL.5432"},
         ),
+        
+        # engine.url.URL.create(
+        #     drivername="postgresql+pg8000",
+        #     username='postgres',
+        #     password='admin123',
+        #     database='dbname',
+        # ),
         # ...
     )
 SessionLocal = sessionmaker(bind=engine)

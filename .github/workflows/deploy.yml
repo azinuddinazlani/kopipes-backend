@@ -53,4 +53,4 @@ jobs:
           env_vars: |
             DB_USER=${{ vars.DB_USER }}
             DB_PASS=${{ secrets.DB_PASS }}
-            DB_DATABASE=${{ vars.DB_NAME }}
+            DB_NAME=${{ vars.DB_NAME }}
