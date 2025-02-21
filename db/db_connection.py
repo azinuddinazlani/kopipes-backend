@@ -34,8 +34,6 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     # initialize Cloud SQL Python Connector object
     connector = Connector(refresh_strategy="LAZY")
 
-    print('CLOUD_SQL_CONNECTION_NAME: ', CLOUD_SQL_CONNECTION_NAME)
-
     def getconn() -> pg8000.dbapi.Connection:
         conn: pg8000.dbapi.Connection = connector.connect(
             cloud_sql_instance,
