@@ -15,4 +15,4 @@ RUN chmod +x cloud_sql_proxy
 
 EXPOSE 8000
 WORKDIR $APP_HOME
-CMD ["sh -c ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:0.0.0.0:5432 & ; uvicorn main:app --reload --port 8000"]
+CMD ["uvicorn", "main:app", "--reload", "--port", "8000"]

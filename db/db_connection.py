@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os, sys
+from google.cloud.sql.connector import connector, IPTypes
 
 # Database URL (Update as needed)
 
@@ -11,39 +12,56 @@ db_user = os.environ.get("DB_USER")
 db_pass = os.environ.get("DB_PASS")
 db_name = os.environ.get("DB_NAME")
 unix_socket_path = os.environ.get("INSTANCE_UNIX_SOCKET")
+cloud_sql_instance = os.environ.get('CLOUD_SQL_INSTANCE')
 
 DATABASE_URL = "postgresql://{db_user}:{db_pass}@localhost:5432/{db_name}"
 
-engine = create_engine(
-        DATABASE_URL
-        # Equivalent URL:
-        # postgresql+pg8000://<db_user>:<db_pass>@/<db_name>
-        #                         ?unix_sock=<INSTANCE_UNIX_SOCKET>/.s.PGSQL.5432
-        # Note: Some drivers require the `unix_sock` query parameter to use a different key.
-        # For example, 'psycopg2' uses the path set to `host` in order to connect successfully.
-        # engine.url.URL.create(
-        #     drivername="postgresql+pg8000",
-        #     username=db_user,
-        #     password=db_pass,
-        #     database=db_name,
-        #     query={"unix_sock": f"{unix_socket_path}/.s.PGSQL.5432"},
-        # ),
-        
-        # engine.url.URL.create(
-        #     drivername="postgresql+pg8000",
-        #     username='postgres',
-        #     password='admin123',
-        #     database='dbname',
-        # ),
+def connect_with_connector() -> sqlalchemy.engine.base.Engine:
+    """
+    Initializes a connection pool for a Cloud SQL instance of Postgres.
+
+    Uses the Cloud SQL Python Connector package.
+    """
+    # Note: Saving credentials in environment variables is convenient, but not
+    # secure - consider a more secure solution such as
+    # Cloud Secret Manager (https://cloud.google.com/secret-manager) to help
+    # keep secrets safe.
+
+    ip_type = IPTypes.PRIVATE if os.environ.get("PRIVATE_IP") else IPTypes.PUBLIC
+
+    # initialize Cloud SQL Python Connector object
+    connector = Connector(refresh_strategy="LAZY")
+
+    print('CLOUD_SQL_CONNECTION_NAME: ', CLOUD_SQL_CONNECTION_NAME)
+
+    def getconn() -> pg8000.dbapi.Connection:
+        conn: pg8000.dbapi.Connection = connector.connect(
+            cloud_sql_instance,
+            "pg8000",
+            user=db_user,
+            password=db_pass,
+            db=db_name,
+            ip_type=ip_type,
+        )
+        return conn
+
+    # The Cloud SQL Python Connector can be used with SQLAlchemy
+    # using the 'creator' argument to 'create_engine'
+    pool = sqlalchemy.create_engine(
+        "postgresql+pg8000://",
+        creator=getconn,
         # ...
     )
-SessionLocal = sessionmaker(bind=engine)
+    return pool
+
+dbengine = connect_with_connector()
+SessionLocal = sessionmaker(bind=dbengine)
 Base = declarative_base()
 
 # Create tables automatically when the module is imported
 def init_table():
     """Ensures all tables are created before the app starts."""
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(dbengine)
     # Base.metadata.drop_all(engine)  # Drops all tables
     # Base.metadata.create_all(engine)  # Creates all tables again
 
