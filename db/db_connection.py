@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine, engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+import sqlalchemy
+import pg8000
 import os, sys
 from google.cloud.sql.connector import connector, IPTypes
 
