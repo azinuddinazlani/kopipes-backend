@@ -8,3 +8,4 @@ asyncpg
 python-multipart
 pg8000
 cloud-sql-python-connector
+dotenv
