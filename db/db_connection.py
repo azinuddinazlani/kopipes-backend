@@ -4,7 +4,9 @@ import sqlalchemy
 import pg8000
 import os, sys
 from google.cloud.sql.connector import Connector, IPTypes
+from dotenv import load_dotenv
 
+load_dotenv()
 # Database URL (Update as needed)
 
 
@@ -54,7 +56,21 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     )
     return pool
 
-dbengine = connect_with_connector()
+
+def connect_to_local_postgres() -> sqlalchemy.engine.base.Engine:
+    """
+    Initializes a connection pool for a local instance of Postgres.
+    """
+    local_db_url = "postgresql://{db_user}:{db_pass}@localhost:5432/{db_name}".format(
+        db_user=db_user,
+        db_pass=db_pass,
+        db_name=db_name
+    )
+    local_engine = sqlalchemy.create_engine(local_db_url)
+    return local_engine
+
+# Example usage
+dbengine = connect_to_local_postgres() if os.getenv('DEV') else connect_with_connector()
 SessionLocal = sessionmaker(bind=dbengine)
 Base = declarative_base()
 
