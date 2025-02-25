@@ -15,10 +15,10 @@ load_dotenv()
 db_user = os.environ.get("DB_USER")
 db_pass = os.environ.get("DB_PASS")
 db_name = os.environ.get("DB_NAME")
+db_port = os.environ.get("DB_PORT")
+db_host = os.environ.get("DB_HOST")
 unix_socket_path = os.environ.get("INSTANCE_UNIX_SOCKET")
 cloud_sql_instance = os.environ.get('CLOUD_SQL_INSTANCE')
-
-DATABASE_URL = "postgresql://{db_user}:{db_pass}@localhost:5432/{db_name}"
 
 def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     """
@@ -61,9 +61,11 @@ def connect_to_local_postgres() -> sqlalchemy.engine.base.Engine:
     """
     Initializes a connection pool for a local instance of Postgres.
     """
-    local_db_url = "postgresql://{db_user}:{db_pass}@localhost:5432/{db_name}".format(
+    local_db_url = "postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}".format(
         db_user=db_user,
         db_pass=db_pass,
+        db_host=db_host,
+        db_port=db_port,
         db_name=db_name
     )
     local_engine = sqlalchemy.create_engine(local_db_url)
