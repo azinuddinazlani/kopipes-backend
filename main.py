@@ -12,3 +12,6 @@ app = FastAPI()
 app.include_router(user_router, prefix="/users", tags=["users"])
 app.include_router(skill_assess_router, prefix="/skill-assess", tags=["skill-assess"])
 app.include_router(employer_router, prefix="/employer", tags=["employer"])
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080)
