@@ -11,4 +11,5 @@ COPY . $APP_HOME
 
 EXPOSE 8080
 WORKDIR $APP_HOME
-CMD ["uvicorn", "main:app", "--reload", "--port", "8080"]
+# CMD ["uvicorn", "main:app", "--reload", "--port", "8080"]
+CMD ['python', 'main_test.py']
