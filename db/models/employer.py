@@ -12,7 +12,7 @@ class Employer(Base):
     __tablename__ = "employers"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=True)
 
     jobs = relationship('EmployerJobs', back_populates='employer', lazy="joined")
 
@@ -21,8 +21,8 @@ class EmployerJobs(Base):
     __tablename__ = "employer_jobs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    employer_id = Column(Integer, ForeignKey('employers.id'), nullable=False)
-    name = Column(String, nullable=False)
+    employer_id = Column(Integer, ForeignKey('employers.id'), nullable=True)
+    name = Column(String, nullable=True)
 
     employer = relationship('Employer', back_populates='jobs')
     user_employer_jobs = relationship('UserEmployerJobs', back_populates='jobs', lazy="joined")

@@ -37,9 +37,9 @@ class UserSkills(Base):
     __tablename__ = "users_skills"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    name = Column(String, nullable=False)
-    level = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    name = Column(String, nullable=True)
+    level = Column(String, nullable=True)
 
     user = relationship('User', back_populates='skills')
 
@@ -58,13 +58,13 @@ class UserSkillAssess(Base):
     __tablename__ = "users_skill_assess"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     version = Column(Integer, default="0")
     qs_type = Column(String, default="")
-    question = Column(String, nullable=False, default="")
-    option = Column(String, nullable=False, default="")
-    answer_given = Column(String, nullable=False, default="")
-    answer_real = Column(String, nullable=False, default="")
+    question = Column(String, nullable=True, default="")
+    option = Column(String, nullable=True, default="")
+    answer_given = Column(String, nullable=True, default="")
+    answer_real = Column(String, nullable=True, default="")
     qs_level = Column(String, default="0")
     user_level = Column(String, default="0")
 
@@ -74,8 +74,8 @@ class UserEmployerJobs(Base):
     __tablename__ = "user_employer_jobs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    employer_jobs_id = Column(Integer, ForeignKey('employer_jobs.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    employer_jobs_id = Column(Integer, ForeignKey('employer_jobs.id'), nullable=True)
 
     user = relationship('User', back_populates="employer_jobs")
     jobs = relationship('EmployerJobs', back_populates='user_employer_jobs')
