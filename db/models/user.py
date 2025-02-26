@@ -20,9 +20,9 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    email = Column(String, nullable=False)
-    password = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    password = Column(String, nullable=True)
     type = Column(String, default="Pending")
     about = Column(String, nullable=True)
     resume = Column(String, nullable=True)
