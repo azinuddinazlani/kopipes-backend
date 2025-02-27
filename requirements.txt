@@ -9,3 +9,6 @@ python-multipart
 pg8000
 cloud-sql-python-connector
 dotenv
+langchain_core
+langchain_google_genai
+pypdf

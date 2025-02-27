@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Table
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Dict, List
 from db.db_connection import Base
 from db.models.employer import EmployerJobs
 
@@ -13,8 +13,23 @@ class UserLogin(BaseModel):
     email: EmailStr
 
 class UserSchema(BaseModel):
-    name: Optional[int] = None
-    type: str
+    name: Optional[str] = None
+    type: Optional[str] = None
+    about: Optional[str] = None
+    resume: Optional[str] = None
+    skills: Optional[Dict[str, str]] = None
+    position: Optional[str] = None
+    location: Optional[str] = None
+    experience: Optional[str] = None
+    education: Optional[str] = None
+    jobs: Optional[str] = None
+
+class ResumeReport(BaseModel):
+    name: str = Field(description="Name of the employee")
+    address: str = Field(description="Address of the employee")
+    skills: List[str] = Field(description="List of skills")
+    education: List[str] = Field(description="Education details of the employee")
+    experience: List[str] = Field(description="Experience details of the employee")
 
 class User(Base):
     __tablename__ = "users"
@@ -27,6 +42,11 @@ class User(Base):
     about = Column(String, nullable=True)
     resume = Column(String, nullable=True)
     resume_base64 = Column(String, nullable=True)
+    position = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    experience = Column(String, nullable=True)
+    education = Column(String, nullable=True)
+    jobs = Column(String, nullable=True)
 
     skills = relationship('UserSkills', back_populates='user', lazy="joined")
     skill_assess = relationship('UserSkillAssess', back_populates='user', lazy="joined")

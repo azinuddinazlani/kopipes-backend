@@ -2,11 +2,36 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from sqlalchemy.orm import Session
 from db.db_connection import get_db
 from db.crud import *
-from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs
+from sqlalchemy.dialects.postgresql import insert  # Required for ON CONFLICT
+from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport
 from typing import List
-import shutil, os, base64
+import shutil, os, base64, json
+from io import BytesIO
+
+from dotenv import load_dotenv
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_google_genai import GoogleGenerativeAI
+from pypdf import PdfReader
 
 router = APIRouter()
+load_dotenv()
+llm = GoogleGenerativeAI(
+    model='gemini-1.5-flash',
+    temperature=0,
+    api_key=os.getenv('GEMINI_API_KEY')
+)
+
+
+def read_pdf_file(file_contents: BytesIO):
+    try:
+        pdf_reader = PdfReader(file_contents)
+        text = ''
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        return text
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading PDF: {str(e)}")
 
 @router.post("/")
 def user_list(db: Session = Depends(get_db)):
@@ -41,20 +66,40 @@ def user_get(email: str, db: Session = Depends(get_db)):
 # update user details using their email
 @router.post("/{email}/update")
 def user_update(user_data: UserSchema, email: str, db: Session = Depends(get_db)):
-    result = update_data(db, User, {"email": email}, user_data.dict())
+#     result = update_data(db, User, {"email": email}, user_data.dict())
+#     if result:
+#         return ({"ok": f"User with email {email} updated successfully."})
+#     else:
+#         # print(f"User with email {email} not found.")
+#         raise HTTPException(status_code=400, detail={result["error"]})
+
+    skills_data = user_data.skills
+    user_dict = user_data.dict(exclude={"skills"})
+    result = update_data(db, User, {"email": email}, user_dict)
     if result:
-        print(f"User with email {email} updated successfully.")
-    else:
-        # print(f"User with email {email} not found.")
-        raise HTTPException(status_code=400, detail={result["error"]})
+        user_id = get_data(db, User, {"email": email})[0].id
+        existing_skills = {
+            skill.name: skill for skill in db.query(UserSkills).filter(UserSkills.user_id == user_id).all()
+        }
+
+        for skill_name, skill_level in skills_data.items():
+            if skill_name in existing_skills:
+                existing_skills[skill_name].level = skill_level
+            else:
+                new_skill = UserSkills(user_id=user_id, name=skill_name, level=skill_level)
+                db.add(new_skill)
+
+        db.commit()
+
+        return ({"ok": f"User with email {email} updated successfully."})
     
-    return result
+    raise HTTPException(status_code=400, detail={result["error"]})
 
 @router.post("/{email}/upload")
 async def user_upload(email: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-    
+    '''
     UPLOAD_DIR = "uploads"
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -63,15 +108,70 @@ async def user_upload(email: str, file: UploadFile = File(...), db: Session = De
     # Save file locally
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
+    '''
+
     # Convert PDF to Base64
     base64_string = "-"
+    name = "-"
+    position = "-"
+    location = "-"
+    experience = "-"
+    education = "-"
+    jobs = "-"
     # with open(file_location, "rb") as pdf_file:
     #     base64_string = base64.b64encode(pdf_file.read()).decode("utf-8")
+    try:
+        contents = await file.read()
+        file_contents = BytesIO(contents)
+        text = read_pdf_file(file_contents)
+
+        prompt = """
+        Extract information from the resume delimited by triple backquotes and return it as JSON with the following fields:
+        - name: The full name of the person
+        - job position: Last job position
+        - address: Their current address. 'State, City'
+        - email: Email Address
+        - experience: A list of their work experiences or internship and include all details without changing the original contexts.
+        - education: A list of their educational qualifications
+        - skills: A list of their technical and professional skills
+        - jobs: List of job experience
+
+        ```{text}```
+        """
+
+        prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
+        output_parser = JsonOutputParser(pydantic_object=ResumeReport)
+        
+        # Create the chain correctly
+        chain = (
+            prompt_template 
+            | llm 
+            | output_parser
+        )
+        
+        # Invoke chain with the text
+        response = chain.invoke({"text": text})
+        base64_string = json.dumps(response)
+
+        name = response['name']
+        position = response['job_position']
+        location = response['address']
+        experience = json.dumps(response['experience'])
+        education = json.dumps(response['education'])
+        jobs = json.dumps(response['jobs'])
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
 
     result = update_data(db, User, {"email": email}, {
+        "name": name,
         "resume": file.filename,
-        "resume_base64": base64_string
+        "resume_base64": base64_string,
+        "position": position,
+        "location": location,
+        "experience": experience,
+        "education": education,
+        "jobs": jobs
     })
     if result:
         print(f"User with email {email} updated successfully.")
