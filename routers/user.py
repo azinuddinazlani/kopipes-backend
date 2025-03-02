@@ -19,7 +19,8 @@ load_dotenv()
 llm = GoogleGenerativeAI(
     model='gemini-1.5-flash',
     temperature=0,
-    api_key=os.getenv('GEMINI_API_KEY')
+    # api_key=os.getenv('GEMINI_API_KEY')
+    api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
 )
 
 
