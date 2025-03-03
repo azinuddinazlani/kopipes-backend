@@ -74,23 +74,25 @@ def user_update(user_data: UserSchema, email: str, db: Session = Depends(get_db)
 #         # print(f"User with email {email} not found.")
 #         raise HTTPException(status_code=400, detail={result["error"]})
 
-    skills_data = user_data.skills
+    skills_data = getattr(user_data, "skills", None)
     user_dict = user_data.dict(exclude={"skills"})
     result = update_data(db, User, {"email": email}, user_dict)
     if result:
         user_id = get_data(db, User, {"email": email})[0].id
-        existing_skills = {
-            skill.name: skill for skill in db.query(UserSkills).filter(UserSkills.user_id == user_id).all()
-        }
 
-        for skill_name, skill_level in skills_data.items():
-            if skill_name in existing_skills:
-                existing_skills[skill_name].level = skill_level
-            else:
-                new_skill = UserSkills(user_id=user_id, name=skill_name, level=skill_level)
-                db.add(new_skill)
+        if skills_data:
+            existing_skills = {
+                skill.name: skill for skill in db.query(UserSkills).filter(UserSkills.user_id == user_id).all()
+            }
 
-        db.commit()
+            for skill_name, skill_level in skills_data.items():
+                if skill_name in existing_skills:
+                    existing_skills[skill_name].level = skill_level
+                else:
+                    new_skill = UserSkills(user_id=user_id, name=skill_name, level=skill_level)
+                    db.add(new_skill)
+
+            db.commit()
 
         return ({"ok": f"User with email {email} updated successfully."})
     
