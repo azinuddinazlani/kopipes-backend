@@ -23,6 +23,28 @@ llm = GoogleGenerativeAI(
     api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
 )
 
+def update_user_skills(db, email, skills_data):
+    if not skills_data:
+        return  # No skills to update
+    
+
+    user_id = get_data(db, User, {"email": email})[0].id
+
+    # Fetch existing skills for the user
+    existing_skills = {
+        skill.name: skill for skill in db.query(UserSkills).filter(UserSkills.user_id == user_id).all()
+    }
+
+    for skill_name, skill_level in skills_data.items():
+        if skill_name in existing_skills:
+            existing_skills[skill_name].level = skill_level  # Update skill level
+        else:
+            new_skill = UserSkills(user_id=user_id, name=skill_name, level=skill_level)
+            db.add(new_skill)  # Add new skill
+
+    db.commit()
+
+
 
 def read_pdf_file(file_contents: BytesIO):
     try:
@@ -78,21 +100,7 @@ def user_update(user_data: UserSchema, email: str, db: Session = Depends(get_db)
     user_dict = user_data.dict(exclude={"skills"})
     result = update_data(db, User, {"email": email}, user_dict)
     if result:
-        user_id = get_data(db, User, {"email": email})[0].id
-
-        if skills_data:
-            existing_skills = {
-                skill.name: skill for skill in db.query(UserSkills).filter(UserSkills.user_id == user_id).all()
-            }
-
-            for skill_name, skill_level in skills_data.items():
-                if skill_name in existing_skills:
-                    existing_skills[skill_name].level = skill_level
-                else:
-                    new_skill = UserSkills(user_id=user_id, name=skill_name, level=skill_level)
-                    db.add(new_skill)
-
-            db.commit()
+        update_user_skills(db, email, skills_data)
 
         return ({"ok": f"User with email {email} updated successfully."})
     
@@ -121,6 +129,7 @@ async def user_upload(email: str, file: UploadFile = File(...), db: Session = De
     experience = "-"
     education = "-"
     jobs = "-"
+    skills_data = None
     # with open(file_location, "rb") as pdf_file:
     #     base64_string = base64.b64encode(pdf_file.read()).decode("utf-8")
     try:
@@ -162,9 +171,12 @@ async def user_upload(email: str, file: UploadFile = File(...), db: Session = De
         experience = json.dumps(response['experience'])
         education = json.dumps(response['education'])
         jobs = json.dumps(response['jobs'])
+        skills_data = dict.fromkeys(response['skills'], 0)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
+    
+    update_user_skills(db, email, skills_data)
 
     result = update_data(db, User, {"email": email}, {
         "name": name,
