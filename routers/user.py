@@ -7,6 +7,7 @@ from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills
 from typing import List
 import shutil, os, base64, json
 from io import BytesIO
+from .evaluator import BatchRequest, BatchEvaluationResponse, BehaviorEvaluator
 
 from dotenv import load_dotenv
 from langchain_core.output_parsers import JsonOutputParser
@@ -22,6 +23,15 @@ llm = GoogleGenerativeAI(
     # api_key=os.getenv('GEMINI_API_KEY')
     api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
 )
+
+google_credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if not google_credentials_path:
+    print("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+else:
+    print(f"Using Google credentials from: {google_credentials_path}")
+    # Verify the file exists
+    if not os.path.exists(google_credentials_path):
+        print(f"WARNING: Credentials file not found at {google_credentials_path}")
 
 def update_user_skills(db, email, skills_data):
     if not skills_data:
@@ -251,3 +261,29 @@ def user_apply_job(email: str, job: str, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+
+@router.post("/{email}/evaluate", response_model=BatchEvaluationResponse)
+async def evaluate_responses(email: str, request: BatchRequest, db: Session = Depends(get_db)):
+    """
+    Evaluate multiple behavioral questions and responses in a single request.
+    """
+    evaluator = BehaviorEvaluator()
+    try:
+        evaluations = []
+        for qr in request.responses:
+            result = await evaluator.evaluate_response(
+                question=qr.question,
+                response=qr.response
+            )
+            evaluations.append(result)
+
+        update_data(db, User, {"email": email}, {"about": json.dumps(evaluations)})
+
+        return {"evaluations": evaluations}
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Unexpected error in batch evaluation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")

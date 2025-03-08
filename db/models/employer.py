@@ -13,7 +13,9 @@ class Employer(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=True)
-
+    info = Column(String, nullable=True)
+    logo = Column(String, nullable=True)
+    
     jobs = relationship('EmployerJobs', back_populates='employer', lazy="joined")
 
 

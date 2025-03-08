@@ -151,14 +151,20 @@ def upload_skill_assess(db: Session = Depends(get_db)):
 
     return "{'ok'}"
 
-@router.post("/modify-table-user")
-def modify_table_user(db: Session = Depends(get_db)):    
-  add_columns_to_table(db, "users", {
+@router.post("/modify-table")
+def modify_table(db: Session = Depends(get_db)):    
+  # add_columns_to_table(db, "users", {
+  #     # "resume": "TEXT"
+  #     # "resume_base64": "TEXT"
+  #     "position": "TEXT",
+  #     "location": "TEXT",
+  #     "experience": "TEXT",
+  #     "education": "TEXT",
+  #     "jobs": "TEXT"
+  # })
+  add_columns_to_table(db, "employers", {
       # "resume": "TEXT"
       # "resume_base64": "TEXT"
-      "position": "TEXT",
-      "location": "TEXT",
-      "experience": "TEXT",
-      "education": "TEXT",
-      "jobs": "TEXT"
+      "info": "TEXT",
+      "logo": "TEXT"
   })
