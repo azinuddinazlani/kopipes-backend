@@ -18,20 +18,10 @@ from pypdf import PdfReader
 router = APIRouter()
 load_dotenv()
 llm = GoogleGenerativeAI(
-    model='gemini-1.5-flash',
+    model='gemini-1.5-pro',
     temperature=0,
-    # api_key=os.getenv('GEMINI_API_KEY')
-    api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
+    api_key=os.getenv('GOOGLE_API_KEY')
 )
-
-google_credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-if not google_credentials_path:
-    print("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
-else:
-    print(f"Using Google credentials from: {google_credentials_path}")
-    # Verify the file exists
-    if not os.path.exists(google_credentials_path):
-        print(f"WARNING: Credentials file not found at {google_credentials_path}")
 
 def update_user_skills(db, email, skills_data):
     if not skills_data:

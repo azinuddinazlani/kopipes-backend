@@ -106,17 +106,20 @@ class BatchEvaluationResponse(BaseModel):
 # Evaluator Class
 class BehaviorEvaluator:
     def __init__(self):
-        # Initialize LLM with Google credentials
+        # Get API key from environment variable
+        api_key = os.getenv("GOOGLE_API_KEY")
+        
+        # Initialize LLM with Vertex AI key
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-pro",
             temperature=0.3,
-            google_api_key=None,  # Will use GOOGLE_APPLICATION_CREDENTIALS
+            google_api_key=api_key
         )
 
-        # Initialize embeddings with Google credentials
+        # Initialize embeddings with Vertex AI key
         self.embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
-            google_api_key=None,  # Will use GOOGLE_APPLICATION_CREDENTIALS
+            google_api_key=api_key
         )
 
         # MongoDB setup

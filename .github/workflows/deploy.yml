@@ -55,3 +55,5 @@ jobs:
             DB_PASS=${{ secrets.DB_PASS }}
             DB_NAME=${{ vars.DB_NAME }}
             CLOUD_SQL_INSTANCE=${{ vars.CLOUD_SQL_INSTANCE }}
+            GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+            MONGO_ATLAS_CLUSTER_URI=${{ secrets.MONGO_ATLAS_CLUSTER_URI }}
