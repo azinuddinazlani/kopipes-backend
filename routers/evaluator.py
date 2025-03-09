@@ -83,7 +83,7 @@ class Citation(BaseModel):
     text: str
     source: str
     page_number: int = Field(
-        ...,
+        default=1, # Default to page 1 if not provided
         description="Page number where the citation can be found",
         example=1
     )
