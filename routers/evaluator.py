@@ -282,7 +282,7 @@ class BehaviorEvaluator:
                             {
                                 "text": "Unable to determine citations due to parsing error",
                                 "source": "Error",
-                                "page_number": 0
+                                "page_number": 1  # Changed from 0 to 1
                             }
                         ],
                         "strengths": ["Unable to determine strengths due to parsing error"],
@@ -318,6 +318,12 @@ class BehaviorEvaluator:
                 if not isinstance(parsed_result[key], list):
                     parsed_result[key] = [parsed_result[key]]
             
+            # Ensure all citation page numbers are valid integers
+            if "citations" in parsed_result:
+                for i in range(len(parsed_result["citations"])):
+                    if "page_number" not in parsed_result["citations"][i] or parsed_result["citations"][i]["page_number"] is None:
+                        parsed_result["citations"][i]["page_number"] = 1
+            
             # Add the question to the response
             parsed_result["question"] = question
             parsed_result["answer"] = response
@@ -328,4 +334,4 @@ class BehaviorEvaluator:
             raise http_ex
         except Exception as e:
             print(f"Error in evaluate_response: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e)) 
+            raise HTTPException(status_code=500, detail=str(e))
