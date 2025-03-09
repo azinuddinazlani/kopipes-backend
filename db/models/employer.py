@@ -6,7 +6,9 @@ from db.db_connection import Base
 # from db.models.user import UserEmployerJobs
 
 class EmployerSchema(BaseModel):
-    name: Optional[int] = str
+    name: Optional[str] = None
+    info: Optional[str] = None
+    logo: Optional[str] = None
 
 class Employer(Base):
     __tablename__ = "employers"
@@ -23,8 +25,10 @@ class EmployerJobs(Base):
     __tablename__ = "employer_jobs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    employer_id = Column(Integer, ForeignKey('employers.id'), nullable=True)
+    employer_id = Column(Integer, ForeignKey('employers.id', ondelete='CASCADE'), nullable=True)
     name = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    desc_json = Column(String, nullable=True)
 
-    employer = relationship('Employer', back_populates='jobs')
-    user_employer_jobs = relationship('UserEmployerJobs', back_populates='jobs', lazy="joined")
+    employer = relationship('Employer', back_populates='jobs', lazy='joined')
+    user_employer_jobs = relationship('UserEmployerJobs', back_populates='jobs', lazy='joined', uselist=True)

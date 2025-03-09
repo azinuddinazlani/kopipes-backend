@@ -31,6 +31,14 @@ class ResumeReport(BaseModel):
     education: List[str] = Field(description="Education details of the employee")
     experience: List[str] = Field(description="Experience details of the employee")
 
+class JobReport(BaseModel):
+    title: str
+    description: str
+    location: str
+    experience: str
+    education: str
+    skills: str
+
 class User(Base):
     __tablename__ = "users"
     
@@ -96,6 +104,7 @@ class UserEmployerJobs(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     employer_jobs_id = Column(Integer, ForeignKey('employer_jobs.id'), nullable=True)
+    match_json = Column(String, default="")
 
     user = relationship('User', back_populates="employer_jobs")
-    jobs = relationship('EmployerJobs', back_populates='user_employer_jobs')
+    jobs = relationship('EmployerJobs', back_populates='user_employer_jobs', lazy='joined')

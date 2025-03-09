@@ -3,11 +3,14 @@ from sqlalchemy.orm import Session
 from db.db_connection import get_db
 from db.crud import *
 from sqlalchemy.dialects.postgresql import insert  # Required for ON CONFLICT
-from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport
+from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport, JobReport
+from db.models.employer import EmployerJobs
 from typing import List
 import shutil, os, base64, json
 from io import BytesIO
 from .evaluator import BatchRequest, BatchEvaluationResponse, BehaviorEvaluator
+from .job_evaluator import JobEvaluator
+from .resume_evaluator import ResumeEvaluator
 
 from dotenv import load_dotenv
 from langchain_core.output_parsers import JsonOutputParser
@@ -22,6 +25,15 @@ llm = GoogleGenerativeAI(
     temperature=0,
     api_key=os.getenv('GOOGLE_API_KEY')
 )
+def replace_nulls(obj):
+    """Recursively replace None values with an empty string in a dictionary or list."""
+    if isinstance(obj, dict):
+        return {k: replace_nulls(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_nulls(v) for v in obj]
+    elif obj is None:
+        return ""
+    return obj
 
 def update_user_skills(db, email, skills_data):
     if not skills_data:
@@ -108,93 +120,143 @@ def user_update(user_data: UserSchema, email: str, db: Session = Depends(get_db)
 
 @router.post("/{email}/upload")
 async def user_upload(email: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """
+    Upload and process a resume PDF file.
+    """
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-    '''
-    UPLOAD_DIR = "uploads"
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-    file_location = os.path.join(UPLOAD_DIR, file.filename)
-    
-    # Save file locally
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    '''
-
-    # Convert PDF to Base64
-    base64_string = "-"
-    name = "-"
-    position = "-"
-    location = "-"
-    experience = "-"
-    education = "-"
-    jobs = "-"
-    skills_data = None
-    # with open(file_location, "rb") as pdf_file:
-    #     base64_string = base64.b64encode(pdf_file.read()).decode("utf-8")
     try:
+        # Read file contents
         contents = await file.read()
         file_contents = BytesIO(contents)
-        text = read_pdf_file(file_contents)
 
-        prompt = """
-        Extract information from the resume delimited by triple backquotes and return it as JSON with the following fields:
-        - name: The full name of the person
-        - job position: Last job position
-        - address: Their current address. 'State, City'
-        - email: Email Address
-        - experience: A list of their work experiences or internship and include all details without changing the original contexts.
-        - education: A list of their educational qualifications
-        - skills: A list of their technical and professional skills
-        - jobs: List of job experience
+        # Create evaluator and process resume
+        evaluator = ResumeEvaluator()
+        result = await evaluator.evaluate_resume(file_contents)
 
-        ```{text}```
-        """
+        # Update user skills
+        skills_data = dict.fromkeys(result["skills"], 0)
+        update_user_skills(db, email, skills_data)
 
-        prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
-        output_parser = JsonOutputParser(pydantic_object=ResumeReport)
-        
-        # Create the chain correctly
-        chain = (
-            prompt_template 
-            | llm 
-            | output_parser
-        )
-        
-        # Invoke chain with the text
-        response = chain.invoke({"text": text})
-        base64_string = json.dumps(response)
+        # Update user information
+        update_result = update_data(db, User, {"email": email}, {
+            "name": result["name"],
+            "resume": file.filename,
+            "resume_base64": result["base64_string"],
+            "position": result["position"],
+            "location": result["location"],
+            "experience": result["experience"],
+            "education": result["education"],
+            "jobs": result["jobs"]
+        })
 
-        name = response['name']
-        position = response['job_position']
-        location = response['address']
-        experience = json.dumps(response['experience'])
-        education = json.dumps(response['education'])
-        jobs = json.dumps(response['jobs'])
-        skills_data = dict.fromkeys(response['skills'], 0)
+        if not update_result:
+            raise HTTPException(status_code=400, detail="Failed to update user information")
 
+        return "Resume processed and user information updated successfully"
+
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
+        print(f"Error in user_upload: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
-    
-    update_user_skills(db, email, skills_data)
 
-    result = update_data(db, User, {"email": email}, {
-        "name": name,
-        "resume": file.filename,
-        "resume_base64": base64_string,
-        "position": position,
-        "location": location,
-        "experience": experience,
-        "education": education,
-        "jobs": jobs
-    })
-    if result:
-        print(f"User with email {email} updated successfully.")
-    else:
-        # print(f"User with email {email} not found.")
-        raise HTTPException(status_code=400, detail={result["error"]})
+
+@router.post("/{email}/evaluate", response_model=BatchEvaluationResponse)
+async def evaluate_responses(email: str, request: BatchRequest, db: Session = Depends(get_db)):
+    """
+    Evaluate multiple behavioral questions and responses in a single request.
+    """
+    evaluator = BehaviorEvaluator()
+    try:
+        evaluations = []
+        for qr in request.responses:
+            result = await evaluator.evaluate_response(
+                question=qr.question,
+                response=qr.response
+            )
+            evaluations.append(result)
+
+        update_data(db, User, {"email": email}, {"about": json.dumps(evaluations)})
+
+        return {"evaluations": evaluations}
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Unexpected error in batch evaluation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@router.post("/{email}/apply/{job}")
+async def user_apply_job(
+    email: str, 
+    job: str, 
+    force_evaluate: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Evaluate a job application by comparing the user's resume with job requirements.
+    Only performs evaluation if:
+    - No previous evaluation exists
+    - Previous evaluation is empty
+    - force_evaluate is True
     
-    return f"User with email {email} updated successfully."
+    Args:
+        email: User's email
+        job: Job ID to apply for
+        force_evaluate: If True, forces re-evaluation even if previous evaluation exists
+        db: Database session
+    """
+    try:
+        # Get user and job data
+        user_id = get_data(db, User, {"email": email})[0].id
+        job_description = db.query(EmployerJobs.desc_json).filter(EmployerJobs.id == job).first()
+        if not job_description:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Check for existing application
+        existing_application = db.query(UserEmployerJobs).filter(
+            UserEmployerJobs.user_id == user_id,
+            UserEmployerJobs.employer_jobs_id == job
+        ).first()
+
+        # If there's an existing application with non-empty match_json and not forcing re-evaluation
+        if not force_evaluate and existing_application and existing_application.match_json and existing_application.match_json.strip():
+            return json.loads(existing_application.match_json)
+
+        # If we need to evaluate, get the resume
+        job_description = json.loads(job_description[0])
+        resume = get_data(db, User, {"email": email})[0].resume_base64
+        if not resume:
+            raise HTTPException(status_code=400, detail="User resume not found")
+
+        # Create evaluator and get analysis
+        evaluator = JobEvaluator()
+        result = await evaluator.evaluate_job_match(
+            job_description=job_description,
+            resume=resume
+        )
+
+        # Delete any existing application
+        if existing_application:
+            delete_data(db, UserEmployerJobs, {"id": existing_application.id})
+
+        # Store the new application
+        db_result = insert_data(db, UserEmployerJobs, {
+            "user_id": user_id,
+            "employer_jobs_id": job,
+            "match_json": json.dumps(result, indent=2)
+        })
+        if not db_result:
+            raise HTTPException(status_code=400, detail="Failed to store job application")
+
+        return result
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Unexpected error in job application: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 # update user details using their email
 @router.post("/{email}/skill-assess")
@@ -239,41 +301,3 @@ def user_skill_assess_set(skills: List[UserSkillAssessSchema], email: str, versi
             # print(f"User with email {email} not found.")
             raise HTTPException(status_code=400, detail={result["error"]})
     return True
-
-@router.post("/{email}/apply/{job}")
-def user_apply_job(email: str, job: str, db: Session = Depends(get_db)):
-    user_id = get_data(db, User, {"email": email})[0].id
-
-    result = insert_data(db, UserEmployerJobs, {
-        "user_id": user_id,
-        "employer_jobs_id": job
-    })
-    if not result:
-        raise HTTPException(status_code=400, detail=result["error"])
-    return result
-
-
-
-@router.post("/{email}/evaluate", response_model=BatchEvaluationResponse)
-async def evaluate_responses(email: str, request: BatchRequest, db: Session = Depends(get_db)):
-    """
-    Evaluate multiple behavioral questions and responses in a single request.
-    """
-    evaluator = BehaviorEvaluator()
-    try:
-        evaluations = []
-        for qr in request.responses:
-            result = await evaluator.evaluate_response(
-                question=qr.question,
-                response=qr.response
-            )
-            evaluations.append(result)
-
-        update_data(db, User, {"email": email}, {"about": json.dumps(evaluations)})
-
-        return {"evaluations": evaluations}
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        print(f"Unexpected error in batch evaluation: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
