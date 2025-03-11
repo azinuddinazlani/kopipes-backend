@@ -1,3 +1,4 @@
 .env
 cloud-sql-proxy.x64.exe
 *.pyc
+__pycache__/
