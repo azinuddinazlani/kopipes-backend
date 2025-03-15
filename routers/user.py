@@ -96,7 +96,8 @@ def user_get(email: str, db: Session = Depends(get_db)):
     result = get_data(db, User, {"email": email})
     if not result:
         raise HTTPException(status_code=400, detail=result["error"])
-    return result
+    # Return only the first result
+    return result[0]
 
 # update user details using their email
 @router.post("/{email}/update")
@@ -154,7 +155,9 @@ async def user_upload(email: str, file: UploadFile = File(...), db: Session = De
         if not update_result:
             raise HTTPException(status_code=400, detail="Failed to update user information")
 
-        return "Resume processed and user information updated successfully"
+        # Get and return the updated user data
+        updated_user = get_data(db, User, {"email": email})[0]
+        return updated_user
 
     except HTTPException as http_ex:
         raise http_ex
