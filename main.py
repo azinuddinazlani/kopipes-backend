@@ -1,10 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db.db_connection import init_table
-from routers.user import router as user_router
-from routers.skill_assess import router as skill_assess_router
-from routers.employer import router as employer_router
-from routers.seed import router as seeds_router
+from routers import user, skill_assess, employer, seed, job_listing  # Remove product_router as it doesn't exist
 import uvicorn
 
 init_table()
@@ -19,10 +16,12 @@ app.add_middleware(
 )
 
 #router
-app.include_router(user_router, prefix="/users", tags=["users"])
-app.include_router(skill_assess_router, prefix="/skill-assess", tags=["skill-assess"])
-app.include_router(employer_router, prefix="/employer", tags=["employer"])
-app.include_router(seeds_router, prefix="/seed", tags=["seed"])
+app.include_router(user.router, prefix="/user", tags=["user"])
+# Remove product_router as it doesn't exist
+app.include_router(skill_assess.router, prefix="/skill-assess", tags=["skill-assess"])
+app.include_router(employer.router, prefix="/employer", tags=["employer"])
+app.include_router(job_listing.router, prefix="/jobs", tags=["jobs"])
+app.include_router(seed.router, prefix="/seed", tags=["seed"])
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
