@@ -247,7 +247,7 @@ async def user_apply_job(
         # Store the new application
         db_result = insert_data(db, UserEmployerJobs, {
             "user_id": user_id,
-            "employer_jobs_id": job,
+            "employer_jobs_id": int(job),
             "match_json": json.dumps(result, indent=2)
         })
         if not db_result:
