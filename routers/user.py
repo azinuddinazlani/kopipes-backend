@@ -220,7 +220,7 @@ async def user_apply_job(
         # Check for existing application
         existing_application = db.query(UserEmployerJobs).filter(
             UserEmployerJobs.user_id == user_id,
-            UserEmployerJobs.employer_jobs_id == job
+            UserEmployerJobs.employer_jobs_id == int(job)
         ).first()
 
         # If there's an existing application with non-empty match_json and not forcing re-evaluation
