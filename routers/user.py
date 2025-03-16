@@ -213,7 +213,7 @@ async def user_apply_job(
     try:
         # Get user and job data
         user_id = get_data(db, User, {"email": email})[0].id
-        job_description = db.query(EmployerJobs.desc_json).filter(EmployerJobs.id == job).first()
+        job_description = db.query(EmployerJobs.desc_json).filter(EmployerJobs.id == int(job)).first()
         if not job_description:
             raise HTTPException(status_code=404, detail="Job not found")
         
