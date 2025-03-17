@@ -11,8 +11,10 @@ router = APIRouter()
 
 @router.post("/")
 def get_all_jobs(
-    email: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    id: Optional[int] = None,
+    employer_id: Optional[int] = None,
+    email: Optional[str] = None
 ):
     """
     Get all job listings with employer details.
@@ -20,6 +22,10 @@ def get_all_jobs(
     """
     # Base query with employer join
     query = db.query(EmployerJobs).join(Employer)
+    if id is not None:
+        query = query.filter(EmployerJobs.id == id)
+    if employer_id is not None:
+        query = query.filter(EmployerJobs.employer_id == employer_id)
     jobs = query.all()
     
     # Get user_id if email provided
