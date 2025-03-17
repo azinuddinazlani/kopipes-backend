@@ -41,8 +41,9 @@ def employer_search(name: str, db: Session = Depends(get_db), hide_empty: bool =
                     applied.match_json = json.loads(applied.match_json) if applied.match_json else {}
                     applied.user.about = json.loads(applied.user.about) if applied.user.about else {}
             
-            for job in jobs_to_remove:
-                employer_data.jobs.remove(job)
+            if hide_empty:
+                for job in jobs_to_remove:
+                    employer_data.jobs.remove(job)
         except json.JSONDecodeError:
             print(f"Warning: Could not decode 'education' as JSON for user ")
 
