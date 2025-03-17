@@ -45,5 +45,5 @@ class EmployerJobs(Base):
     level = Column(String)
     location = Column(String)
 
-    employer = relationship("Employer", back_populates="jobs")
+    employer = relationship("Employer", back_populates="jobs", lazy='joined')
     user_employer_jobs = relationship('UserEmployerJobs', back_populates='jobs', lazy='joined', uselist=True)

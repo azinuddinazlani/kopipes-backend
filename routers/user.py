@@ -4,7 +4,7 @@ from db.db_connection import get_db
 from db.crud import *
 from sqlalchemy.dialects.postgresql import insert  # Required for ON CONFLICT
 from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport, JobReport
-from db.models.employer import EmployerJobs
+from db.models.employer import Employer, EmployerJobs
 from typing import List
 import shutil, os, base64, json
 from io import BytesIO
@@ -97,7 +97,58 @@ def user_get(email: str, db: Session = Depends(get_db)):
     if not result:
         raise HTTPException(status_code=400, detail=result["error"])
     # Return only the first result
-    return result[0]
+    # return result[0]
+    user_data = result[0]
+    if user_data.about:
+        try:
+            user_data.about = json.loads(user_data.about)
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode 'about' as JSON for user {email}")
+            user_data.about = {}
+    else:
+        user_data.about = {}
+
+    if user_data.jobs:
+        try:
+            user_data.jobs = json.loads(user_data.jobs)
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode 'jobs' as JSON for user {email}")
+            user_data.jobs = []
+
+    if user_data.resume_base64:
+        try:
+            user_data.resume_base64 = json.loads(user_data.resume_base64)
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode 'resume_base64' as JSON for user {email}")
+            user_data.resume_base64 = []
+
+    if user_data.experience:
+      try:
+        user_data.experience = json.loads(user_data.experience)
+      except json.JSONDecodeError:
+          print(f"Warning: Could not decode 'experience' as JSON for user {email}")
+          user_data.experience = []
+
+    if user_data.education:
+      try:
+        user_data.education = json.loads(user_data.education)
+      except json.JSONDecodeError:
+          print(f"Warning: Could not decode 'education' as JSON for user {email}")
+          user_data.education = []
+
+    if user_data.employer_jobs:
+        try:
+            for jobs in user_data.employer_jobs:
+                # jobs["match_json"] = json.loads(jobs["match_json"]) if jobs["match_json"] else {}
+                jobs.match_json = json.loads(jobs.match_json) if jobs.match_json else {}
+                jobs.jobs.desc_json = json.loads(jobs.jobs.desc_json) if jobs.jobs.desc_json else {}
+                jobs.jobs.responsibilities = json.loads(jobs.jobs.responsibilities) if jobs.jobs.responsibilities else []
+                jobs.jobs.skills = json.loads(jobs.jobs.skills) if jobs.jobs.skills else []
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode 'education' as JSON for user {email}")
+            user_data.education = []
+
+    return user_data
 
 # update user details using their email
 @router.post("/{email}/update")
