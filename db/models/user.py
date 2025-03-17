@@ -106,5 +106,5 @@ class UserEmployerJobs(Base):
     employer_jobs_id = Column(Integer, ForeignKey('employer_jobs.id'), nullable=True)
     match_json = Column(String, default="")
 
-    user = relationship('User', back_populates="employer_jobs")
+    user = relationship('User', back_populates="employer_jobs", lazy='joined')
     jobs = relationship('EmployerJobs', back_populates='user_employer_jobs', lazy='joined')
