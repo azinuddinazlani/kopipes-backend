@@ -5,12 +5,13 @@ from db.crud import *
 from sqlalchemy.dialects.postgresql import insert  # Required for ON CONFLICT
 from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport, JobReport
 from db.models.employer import Employer, EmployerJobs
-from typing import List
+from typing import List, Dict
 import shutil, os, base64, json
 from io import BytesIO
 from .evaluator import BatchRequest, BatchEvaluationResponse, BehaviorEvaluator
 from .job_evaluator import JobEvaluator
 from .resume_evaluator import ResumeEvaluator
+from .skillset_generator import SkillsetGenerator
 
 from dotenv import load_dotenv
 from langchain_core.output_parsers import JsonOutputParser
@@ -311,7 +312,58 @@ async def user_apply_job(
     except Exception as e:
         print(f"Unexpected error in job application: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    
 
+@router.post("/{email}/skill-assess")
+def user_skill_assess(email: str, db: Session = Depends(get_db)):
+    user_id = get_data(db, User, {"email": email})[0].id
+
+    skill_qs = get_data(db, UserSkillAssess, {"user_id": user_id})
+    total_qs = len(skill_qs)
+    if (isinstance(skill_qs, dict) and 'error' in skill_qs):
+        total_qs = 0
+    
+    if total_qs < 5 or (isinstance(skill_qs, dict) and 'error' in skill_qs):
+        user_skill = get_data(db, UserSkills, {"user_id": user_id})
+        topics = [
+            {
+                "topic": skill.name,
+                "level_min": max(1, skill.level - 1),
+                "level_max": min(5, skill.level + 1)
+            } for skill in user_skill
+        ]
+
+        generator = SkillsetGenerator()
+        result = generator.generate(topics, 5-total_qs)
+        for qs in result['questions']:
+            insert_data(db, UserSkillAssess, {
+                "user_id": user_id,
+                "qs_type": qs['topic'],
+                "question": qs['question'],
+                "option": qs['options'],
+                "answer_real": qs['answer'],
+                "qs_level": qs['level']
+            })
+
+        skill_qs = get_data(db, UserSkillAssess, {"user_id": user_id})
+
+    return skill_qs
+
+@router.post("/{email}/skill-assess/save")
+def user_skill_assess_save(email: str, answers: Dict[int, str], db: Session = Depends(get_db)):
+    user_id = get_data(db, User, {"email": email})[0].id
+
+    # Update the UserSkillAssess table with the provided answers
+    for skill_id, answer_given in answers.items():
+        result = update_data(db, UserSkillAssess, {"id": skill_id, "user_id": user_id}, {"answer_given": answer_given})
+        if not result:
+            raise HTTPException(status_code=400, detail=f"Failed to update skill assessment with id {skill_id}")
+        
+    skill_qs = get_data(db, UserSkillAssess, {"user_id": user_id})
+    return skill_qs
+
+
+'''
 # update user details using their email
 @router.post("/{email}/skill-assess")
 def user_skill_assess_new(skills: List[UserSkillAssessSchema], email: str, db: Session = Depends(get_db)):
@@ -355,3 +407,5 @@ def user_skill_assess_set(skills: List[UserSkillAssessSchema], email: str, versi
             # print(f"User with email {email} not found.")
             raise HTTPException(status_code=400, detail={result["error"]})
     return True
+
+'''
