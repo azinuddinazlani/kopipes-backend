@@ -325,11 +325,15 @@ def user_skill_assess(email: str, db: Session = Depends(get_db)):
     
     if total_qs < 5 or (isinstance(skill_qs, dict) and 'error' in skill_qs):
         user_skill = get_data(db, UserSkills, {"user_id": user_id})
+
+        for skill in user_skill:
+            print(skill.name, " ", skill.level)
+
         topics = [
             {
                 "topic": skill.name,
-                "level_min": max(1, skill.level - 1),
-                "level_max": min(5, skill.level + 1)
+                "level_min": max(1, int(skill.level) - 1),
+                "level_max": min(5, int(skill.level) + 1)
             } for skill in user_skill
         ]
 
