@@ -338,7 +338,7 @@ def user_skill_assess(email: str, db: Session = Depends(get_db)):
         ]
 
         generator = SkillsetGenerator()
-        result = generator.generate(topics, 5-total_qs)
+        result = generator.generate(topics, 10-total_qs)
         for qs in result['questions']:
             insert_data(db, UserSkillAssess, {
                 "user_id": user_id,
@@ -380,7 +380,21 @@ def user_skill_assess_save(email: str, db: Session = Depends(get_db), answers: O
                 raise HTTPException(status_code=400, detail=f"Failed to update skill assessment with id {skill_id}")
         
     skill_qs = get_data(db, UserSkillAssess, {"user_id": user_id})
-    return skill_qs
+
+    # Calculate the number of correct answers
+    total_qs = len(skill_qs)
+    total_correct = sum(1 for qs in skill_qs if qs.answer_given == qs.answer_real)
+    total_wrong = total_qs - total_correct
+    pct = (total_correct / total_qs) * 100 if total_qs > 0 else 0
+
+    summary = {
+        "total_qs": total_qs,
+        "total_correct": total_correct,
+        "total_wrong": total_wrong,
+        "pct": pct
+    }
+
+    return {"skill_qs": skill_qs, "summary": summary}
 
 
 '''
