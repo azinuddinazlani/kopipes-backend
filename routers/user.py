@@ -5,7 +5,7 @@ from db.crud import *
 from sqlalchemy.dialects.postgresql import insert  # Required for ON CONFLICT
 from db.models.user import User, UserRegister, UserLogin, UserSchema, UserSkills, UserSkillAssess, UserSkillAssessSchema, UserEmployerJobs, ResumeReport, JobReport
 from db.models.employer import Employer, EmployerJobs
-from typing import List, Dict
+from typing import List, Dict, Optional
 import shutil, os, base64, json
 from io import BytesIO
 from .evaluator import BatchRequest, BatchEvaluationResponse, BehaviorEvaluator
@@ -354,14 +354,30 @@ def user_skill_assess(email: str, db: Session = Depends(get_db)):
     return skill_qs
 
 @router.post("/{email}/skill-assess/save")
-def user_skill_assess_save(email: str, answers: Dict[int, str], db: Session = Depends(get_db)):
+def user_skill_assess_save(email: str, db: Session = Depends(get_db), answers: Optional[Dict[int, str]] = None):
+    """
+    Update the UserSkillAssess table with the provided answers.
+
+    Args:
+        email: User's email
+        db: Database session
+        answers: Optional dictionary where the key is the question ID and the value is the answer given.
+                 Example: {
+                     "92": "A",
+                     "93": "B"
+                 }
+
+    Returns:
+        Updated skill assessments for the user.
+    """
     user_id = get_data(db, User, {"email": email})[0].id
 
     # Update the UserSkillAssess table with the provided answers
-    for skill_id, answer_given in answers.items():
-        result = update_data(db, UserSkillAssess, {"id": skill_id, "user_id": user_id}, {"answer_given": answer_given})
-        if not result:
-            raise HTTPException(status_code=400, detail=f"Failed to update skill assessment with id {skill_id}")
+    if answers:
+        for skill_id, answer_given in answers.items():
+            result = update_data(db, UserSkillAssess, {"id": skill_id, "user_id": user_id}, {"answer_given": answer_given})
+            if not result:
+                raise HTTPException(status_code=400, detail=f"Failed to update skill assessment with id {skill_id}")
         
     skill_qs = get_data(db, UserSkillAssess, {"user_id": user_id})
     return skill_qs
