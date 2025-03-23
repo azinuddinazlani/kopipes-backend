@@ -40,20 +40,26 @@ def get_all_jobs(
     for job in jobs:
         # Check if current user has applied
         user_application = None
+        application = None
         if user_id:
             application = db.query(UserEmployerJobs).filter(
                 UserEmployerJobs.employer_jobs_id == job.id,
                 UserEmployerJobs.user_id == user_id
             ).first()
+
+        if employer_id:
+            application = db.query(UserEmployerJobs).filter(
+                UserEmployerJobs.employer_jobs_id == job.id
+            ).first()
             
-            if application:
-                user_application = {
-                    "id": application.id or 0,
-                    "user_id": application.user_id or 0,
-                    "employer_jobs_id": application.employer_jobs_id or 0,
-                    # "match_json": application.match_json or ""
-                    "match_json": json.loads(application.match_json) if application.match_json else {}
-                }
+        if application:
+            user_application = {
+                "id": application.id or 0,
+                "user_id": application.user_id or 0,
+                "employer_jobs_id": application.employer_jobs_id or 0,
+                # "match_json": application.match_json or ""
+                "match_json": json.loads(application.match_json) if application.match_json else {}
+            }
         
         job_dict = {
             "id": job.id or 0,
