@@ -58,7 +58,12 @@ def get_all_jobs(
                 "user_id": application.user_id or 0,
                 "employer_jobs_id": application.employer_jobs_id or 0,
                 # "match_json": application.match_json or ""
-                "match_json": json.loads(application.match_json) if application.match_json else {}
+                "match_json": json.loads(application.match_json) if application.match_json else {},
+                "user": {
+                    "id": application.user.id or 0,
+                    "name": application.user.name or "",
+                    "email": application.user.email or ""
+                }
             }
         
         job_dict = {
