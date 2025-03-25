@@ -161,15 +161,23 @@ def user_update(user_data: UserSchema, email: str, db: Session = Depends(get_db)
 #         # print(f"User with email {email} not found.")
 #         raise HTTPException(status_code=400, detail={result["error"]})
 
-    skills_data = getattr(user_data, "skills", None)
-    user_dict = user_data.dict(exclude={"skills"})
+    user_dict = user_data.dict_without_none()
+
+    if "skills" in user_dict:
+        skills_data = user_dict.pop("skills")
+    else:
+        skills_data = None
+    
+    if not user_dict and skills_data is None:
+        raise HTTPException(status_code=400, detail="No valid fields provided for update.")
+    
+    # skills_data = getattr(user_data, "skills", None)
+    # user_dict = user_data.dict(exclude={"skills"})
     result = update_data(db, User, {"email": email}, user_dict)
-    if result:
+    if result and skills_data is not None:
         update_user_skills(db, email, skills_data)
 
-        return ({"ok": f"User with email {email} updated successfully."})
-    
-    raise HTTPException(status_code=400, detail={result["error"]})
+    return ({"ok": f"User with email {email} updated successfully."})
 
 @router.post("/{email}/upload")
 async def user_upload(email: str, file: UploadFile = File(...), db: Session = Depends(get_db)):

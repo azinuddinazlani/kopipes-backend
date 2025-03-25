@@ -24,6 +24,10 @@ class UserSchema(BaseModel):
     education: Optional[str] = None
     jobs: Optional[str] = None
 
+    def dict_without_none(self):
+        """Return dictionary excluding None values."""
+        return {key: value for key, value in self.dict(exclude_unset=True).items() if value is not None}
+
 class ResumeReport(BaseModel):
     name: str = Field(description="Name of the employee")
     address: str = Field(description="Address of the employee")
