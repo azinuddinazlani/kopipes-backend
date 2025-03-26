@@ -18,7 +18,7 @@ app.add_middleware(
 #router
 app.include_router(user.router, prefix="/users", tags=["users"])
 # Remove product_router as it doesn't exist
-app.include_router(skill_assess.router, prefix="/skill-assess", tags=["skill-assess"])
+# app.include_router(skill_assess.router, prefix="/skill-assess", tags=["skill-assess"])
 app.include_router(employer.router, prefix="/employer", tags=["employer"])
 app.include_router(job_listing.router, prefix="/jobs", tags=["jobs"])
 app.include_router(seed.router, prefix="/seed", tags=["seed"])

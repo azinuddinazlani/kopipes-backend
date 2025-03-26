@@ -337,13 +337,25 @@ def user_skill_assess(email: str, db: Session = Depends(get_db)):
         for skill in user_skill:
             print(skill.name, " ", skill.level)
 
+        allowed_skills = ['JavaScript',
+                            'Python',
+                            'React',
+                            'Vue.js',
+                            'Node.js',
+                            'SQL',
+                            'Java',
+                            'Docker',
+                            'AWS',
+                            'TypeScript']
+
         topics = [
             {
                 "topic": skill.name,
                 "level_min": max(1, int(skill.level) - 1),
                 "level_max": min(5, int(skill.level) + 1)
-            } for skill in user_skill
+            } for skill in user_skill if skill.name in allowed_skills
         ]
+        # print(topics)
 
         generator = SkillsetGenerator()
         result = generator.generate(topics, 10-total_qs)
