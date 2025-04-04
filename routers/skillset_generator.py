@@ -1,4 +1,4 @@
-import json
+import json, os
 from typing import List, Optional, Dict
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -23,7 +23,7 @@ class SkillsetGenerator:
         self.llm = ChatGoogleGenerativeAI(
             model="gemini-1.5-flash",
             temperature=0,
-            api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
+            api_key=os.getenv("GOOGLE_API_KEY")
         )
 
     def generate(self, topics: List[Dict[str, int]], num_questions: int):

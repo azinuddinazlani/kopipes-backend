@@ -5,7 +5,7 @@ from langchain_google_genai import GoogleGenerativeAI
 from db.models.user import ResumeReport
 from pypdf import PdfReader
 from io import BytesIO
-import json
+import json, os
 
 def replace_nulls(obj):
     """Recursively replace None values with an empty string in a dictionary or list."""
@@ -22,7 +22,7 @@ class ResumeEvaluator:
         self.llm = GoogleGenerativeAI(
             model='gemini-1.5-flash',
             temperature=0,
-            api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
+            api_key=os.getenv("GOOGLE_API_KEY")
         )
         
         self.evaluation_prompt = PromptTemplate(

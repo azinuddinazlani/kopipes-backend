@@ -3,14 +3,14 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_google_genai import GoogleGenerativeAI
 from db.models.user import JobReport
-import json
+import json, os
 
 class JobEvaluator:
     def __init__(self):
         self.llm = GoogleGenerativeAI(
             model='gemini-1.5-flash',
             temperature=0,
-            api_key='AIzaSyCqcRw49l81hOkG6khQifY4otkxU9Vwk3s'
+            api_key=os.getenv("GOOGLE_API_KEY")
         )
         
         self.evaluation_prompt = PromptTemplate(
