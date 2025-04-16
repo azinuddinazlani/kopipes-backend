@@ -101,7 +101,7 @@ jobs:
 
       - name: Deploy to Supabase
         run: |
-          supabase login --access-token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          supabase login --token ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_DB_USER: ${{ vars.SUPABASE_DB_USER }}
