@@ -4,3 +4,4 @@ cloud-sql-proxy.x64.exe
 __pycache__/
 db/__pycache__/
 db/models/__pycache__/
+venv
